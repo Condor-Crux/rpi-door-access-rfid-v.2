@@ -31,6 +31,8 @@ ENV/
 # SQLite
 *.sqlite3
 *.db
+*.db-shm
+*.db-wal
 
 # OS / IDEs
 .idea/

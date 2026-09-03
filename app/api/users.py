@@ -6,11 +6,12 @@ from sqlalchemy import or_
 from typing import List
 
 from app.infrastructure.database import get_db
-from app.infrastructure.models import UserModel, AccountModel, CompanyModel
+from app.infrastructure.models import UserModel, CompanyModel
 from app.domain.entities import User
 from app.core.security import get_current_admin, get_current_admin_cookie
 from app.core.time import utcnow
 from app.core.audit import log_audit
+from app.api.endpoints import _user_with_accounts
 
 router = APIRouter()
 templates = make_templates()
@@ -24,24 +25,6 @@ def _active_users(db: Session):
         .order_by(UserModel.first_name, UserModel.last_name)
         .all()
     )
-
-
-def _user_with_accounts(db: Session, user_id: int):
-    user = (
-        db.query(UserModel)
-        .options(joinedload(UserModel.company))
-        .filter(UserModel.id == user_id)
-        .first()
-    )
-    if not user:
-        return None, []
-    accounts = (
-        db.query(AccountModel)
-        .filter(AccountModel.user_id == user_id)
-        .order_by(AccountModel.expiration_date.desc())
-        .all()
-    )
-    return user, accounts
 
 
 @router.get("/api/users", response_model=List[User])

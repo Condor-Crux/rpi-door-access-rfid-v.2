@@ -19,8 +19,8 @@
     <td class="px-4 py-3 text-sm text-slate-600">
         {% set kt_labels = {'particulares': 'Particulares', 'cuenta_corriente': 'Cuenta corriente', 'ticket_carga': 'Ticket de carga'} %}
         {{ kt_labels.get(acc.key_type, acc.key_type or 'Particulares') }}
-        {% if acc.key_type == 'ticket_carga' and acc.invoice_number is not none %}
-        <span class="block font-mono text-emerald-600">Ticket #{{ acc.invoice_number }}</span>
+        {% if acc.latest_ticket %}
+        <span class="block font-mono text-emerald-600">Ticket {{ (acc.latest_ticket.ticket_type + '-') if acc.latest_ticket.ticket_type else '#' }}{{ acc.latest_ticket.invoice_number }}</span>
         {% endif %}
     </td>
     <td class="px-4 py-3 text-sm text-slate-500">{{ acc.expiration_date.strftime('%Y-%m-%d %H:%M') }}</td>

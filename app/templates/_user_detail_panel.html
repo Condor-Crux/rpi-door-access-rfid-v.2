@@ -2,6 +2,13 @@
 <!-- User detail panel — loaded via HTMX into #user-detail-panel -->
 <div class="p-5 space-y-5" x-data="{ showAddCard: false, newKeyType: 'particulares' }">
 
+    {% if invoice_error %}
+    <div class="flex items-start gap-2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <span class="text-base leading-none">⚠</span>
+        <span>{{ invoice_error }}</span>
+    </div>
+    {% endif %}
+
     <!-- User info -->
     <div class="flex items-start justify-between">
         <div>
@@ -53,29 +60,49 @@
                    required
                    autocomplete="off"
                    x-ref="cardInput"
-                   x-effect="if (showAddCard) $nextTick(() => $refs.cardInput && $refs.cardInput.focus())"
+                   x-effect="if ($store.rfid.pendingUid) { $el.value = $store.rfid.pendingUid; $store.rfid.pendingUid = ''; $nextTick(() => $el.focus()) } else if (showAddCard) { $nextTick(() => $refs.cardInput && $refs.cardInput.focus()) }"
                    placeholder="UID — pasá la tarjeta por el lector…"
                    class="w-full bg-white border border-sky-200 rounded-xl px-3 py-2 text-sm font-mono text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400">
 
-            <!-- N° ticket de carga (solo ticket) -->
-            <input type="number" name="invoice_number" min="0" step="1"
-                   x-show="newKeyType === 'ticket_carga'" x-cloak
-                   :required="newKeyType === 'ticket_carga'"
-                   placeholder="N° de ticket de carga"
-                   class="w-full bg-white border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400">
+            <!-- N° ticket de carga + Tipo (solo ticket) -->
+            <div class="flex items-center gap-2" x-show="newKeyType === 'ticket_carga'" x-cloak>
+                <input type="text" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" name="invoice_number"
+                       :required="newKeyType === 'ticket_carga'"
+                       placeholder="N° de ticket (8 dígitos)"
+                       class="flex-1 bg-white border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400">
+                <select name="ticket_type"
+                        :required="newKeyType === 'ticket_carga'"
+                        title="Tipo de ticket"
+                        class="bg-white border border-sky-200 rounded-xl px-2 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-400">
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="Y">Y</option>
+                    <option value="R">R</option>
+                </select>
+            </div>
 
-            <!-- Créditos: shortcuts 1/5/10 + editable -->
+            <!-- Créditos: shortcuts 1/5/10 + editable — fijo en 1 para ticket_carga -->
             <div class="flex items-center gap-1.5">
-                <template x-for="n in [1, 5, 10]" :key="n">
-                    <button type="button" @click="credits = n"
-                            :class="credits == n ? 'bg-sky-500 text-white' : 'bg-white text-slate-600 hover:bg-sky-100 border border-sky-200'"
-                            class="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
-                            x-text="n"></button>
+                <template x-if="newKeyType !== 'ticket_carga'">
+                    <div class="flex items-center gap-1.5">
+                        <template x-for="n in [1, 5, 10]" :key="n">
+                            <button type="button" @click="credits = n"
+                                    :class="credits == n ? 'bg-sky-500 text-white' : 'bg-white text-slate-600 hover:bg-sky-100 border border-sky-200'"
+                                    class="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                                    x-text="n"></button>
+                        </template>
+                        <input type="number" name="credits" x-model="credits" min="0" max="999"
+                               title="Créditos"
+                               class="w-16 bg-white border border-sky-200 rounded-lg px-2 py-1.5 text-sm text-center font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-400">
+                        <span class="text-xs text-slate-400 uppercase tracking-wide">Agregar créditos</span>
+                    </div>
                 </template>
-                <input type="number" name="credits" x-model="credits" min="0" max="999"
-                       title="Créditos"
-                       class="w-16 bg-white border border-sky-200 rounded-lg px-2 py-1.5 text-sm text-center font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-400">
-                <span class="text-xs text-slate-400 uppercase tracking-wide">Agregar créditos</span>
+                <template x-if="newKeyType === 'ticket_carga'">
+                    <div class="text-xs text-slate-500">
+                        Acredita <span class="font-semibold text-slate-700">1 crédito</span> fijo.
+                        <input type="hidden" name="credits" value="1">
+                    </div>
+                </template>
                 <input type="datetime-local"
                        name="expiration_date"
                        id="add-card-expiry-{{ user.id }}"
@@ -118,7 +145,7 @@
             </thead>
                 {% for acc in accounts %}
                 {% set kt = kt_icons.get(acc.key_type, ['🔑', acc.key_type or 'Particular']) %}
-                <tbody class="border-t border-sky-100" x-data="{ editMode: false, confirmDelete: false, editKeyType: '{{ acc.key_type or 'particulares' }}', editCredits: {{ acc.credits }} }">
+                <tbody class="border-t border-sky-100" x-data="{ editMode: false, confirmDelete: false, showTickets: false, showPayment: false, editKeyType: '{{ acc.key_type or 'particulares' }}', editCredits: {{ acc.credits }}, newTicketNumber: '', newTicketType: 'A', paymentAmount: 5 }">
                 <tr class="hover:bg-white transition-colors">
                     <td class="px-3 py-2.5 align-middle text-center font-mono text-xs text-slate-600">{{ acc.account_id }}</td>
                     <td class="px-3 py-2.5 align-middle text-center">
@@ -129,10 +156,10 @@
                         </span>
                     </td>
                     <td class="px-2 py-2.5 align-middle text-center">
-                        <span title="{{ kt[1] }}{% if acc.key_type == 'ticket_carga' and acc.invoice_number is not none %} · #{{ acc.invoice_number }}{% endif %}"
+                        <span title="{{ kt[1] }}{% if acc.latest_ticket %} · {{ (acc.latest_ticket.ticket_type + '-') if acc.latest_ticket.ticket_type else '' }}{{ acc.latest_ticket.invoice_number }}{% endif %}"
                               class="text-lg leading-none cursor-default">{{ kt[0] }}</span>
-                        {% if acc.key_type == 'ticket_carga' and acc.invoice_number is not none %}
-                        <div class="font-mono text-[10px] text-emerald-600 leading-none mt-0.5">#{{ acc.invoice_number }}</div>
+                        {% if acc.latest_ticket %}
+                        <div class="font-mono text-[10px] text-emerald-600 leading-none mt-0.5">{{ (acc.latest_ticket.ticket_type + '-') if acc.latest_ticket.ticket_type else '' }}{{ acc.latest_ticket.invoice_number }}</div>
                         {% endif %}
                     </td>
                     <td class="px-3 py-2.5 align-middle text-center font-mono text-sm font-bold text-slate-800">{{ acc.credits }}</td>
@@ -142,6 +169,16 @@
                     </td>
                     <td class="px-3 py-2.5 align-middle">
                         <div class="flex items-center justify-center gap-1.5" x-show="!editMode">
+                            {% if acc.key_type == 'ticket_carga' %}
+                            <button type="button" @click="showTickets = !showTickets"
+                                    class="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-xs font-semibold transition-colors">
+                                Tickets
+                            </button>
+                            {% endif %}
+                            <button type="button" @click="showPayment = !showPayment"
+                                    class="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-xs font-semibold transition-colors">
+                                Pago
+                            </button>
                             <button @click="editMode = true"
                                     class="px-2.5 py-1 bg-sky-100 hover:bg-sky-200 text-sky-700 rounded-lg text-xs font-semibold transition-colors">
                                 Editar
@@ -193,7 +230,8 @@
                                     <option value="active" {{ 'selected' if acc.status == 'active' }}>active</option>
                                     <option value="inactive" {{ 'selected' if acc.status == 'inactive' }}>inactive</option>
                                 </select>
-                                <div class="flex items-center gap-1 bg-white border border-sky-200 rounded-lg px-1.5 py-1">
+                                <div class="flex items-center gap-1 bg-white border border-sky-200 rounded-lg px-1.5 py-1"
+                                     x-show="editKeyType !== 'ticket_carga'">
                                     <span class="text-[10px] uppercase tracking-wide text-slate-400 font-semibold">Créditos</span>
                                     <template x-for="n in [1, 5, 10]" :key="n">
                                         <button type="button" @click="editCredits = n"
@@ -204,6 +242,9 @@
                                     <input type="number" name="credits" x-model="editCredits" min="0" max="999"
                                            class="w-14 border-l border-sky-200 pl-1.5 text-xs font-mono text-center text-slate-800 focus:outline-none">
                                 </div>
+                                <span class="text-[11px] text-slate-400 italic" x-show="editKeyType === 'ticket_carga'" x-cloak>
+                                    créditos: solo por ticket
+                                </span>
                                 <input type="datetime-local" name="expiration_date"
                                        value="{{ acc.expiration_date.strftime('%Y-%m-%dT%H:%M') }}"
                                        class="bg-white border border-sky-200 rounded-lg px-2 py-1 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-400">
@@ -213,11 +254,6 @@
                                     <option value="cuenta_corriente" {{ 'selected' if acc.key_type == 'cuenta_corriente' }}>Cuenta corriente</option>
                                     <option value="ticket_carga" {{ 'selected' if acc.key_type == 'ticket_carga' }}>Ticket de carga</option>
                                 </select>
-                                <input type="number" name="invoice_number" min="0" step="1"
-                                       x-show="editKeyType === 'ticket_carga'" x-cloak
-                                       value="{{ acc.invoice_number if acc.invoice_number is not none else '' }}"
-                                       placeholder="N° ticket"
-                                       class="w-20 bg-white border border-sky-200 rounded-lg px-2 py-1 text-xs font-mono text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-400">
                                 <button type="submit"
                                         class="px-3 py-1 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-xs font-semibold transition-colors">
                                     Aceptar
@@ -226,6 +262,93 @@
                                         @click="editMode = false"
                                         class="px-2 py-1 text-slate-400 hover:text-slate-600 rounded-lg text-xs transition-colors">
                                     ✕
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% if acc.key_type == 'ticket_carga' %}
+                <tr x-show="showTickets" x-cloak>
+                    <td colspan="6" class="px-4 py-3 bg-emerald-50/60 border-t border-dashed border-emerald-200">
+                        <div class="flex flex-col gap-3 max-w-xl mx-auto">
+                            <!-- Historial de tickets cargados (solo lectura) -->
+                            {% if acc.ticket_history %}
+                            <div class="text-xs">
+                                <div class="font-semibold text-emerald-700 uppercase tracking-wide mb-1">Historial de tickets</div>
+                                <table class="w-full text-left">
+                                    <tbody>
+                                        {% for t in acc.ticket_history %}
+                                        <tr class="border-t border-emerald-100">
+                                            <td class="py-1 pr-2 font-mono text-emerald-700">{{ (t.ticket_type + '-') if t.ticket_type else '' }}{{ t.invoice_number }}</td>
+                                            <td class="py-1 pr-2 font-mono text-slate-700">+{{ t.credits }} créditos</td>
+                                            <td class="py-1 text-slate-400">{{ t.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-xs text-slate-400">Todavía no se cargó ningún ticket en esta tarjeta.</div>
+                            {% endif %}
+
+                            <!-- Cargar un ticket nuevo — siempre acredita 1, no es editable -->
+                            <form hx-post="/ui/accounts/{{ acc.account_id }}/load-ticket"
+                                  hx-target="#user-detail-panel"
+                                  hx-swap="innerHTML"
+                                  class="flex items-end gap-1.5 flex-wrap">
+                                <div>
+                                    <label class="block text-[10px] uppercase tracking-wide text-slate-400 font-semibold mb-0.5">N° de ticket (8 dígitos)</label>
+                                    <input type="text" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" name="invoice_number" required
+                                           x-model="newTicketNumber"
+                                           placeholder="N° ticket"
+                                           class="w-28 bg-white border border-emerald-200 rounded-lg px-2 py-1 text-xs font-mono text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-400">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] uppercase tracking-wide text-slate-400 font-semibold mb-0.5">Tipo</label>
+                                    <select name="ticket_type" required
+                                            x-model="newTicketType"
+                                            class="bg-white border border-emerald-200 rounded-lg px-2 py-1 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-400">
+                                        <option value="A">A</option>
+                                        <option value="B">B</option>
+                                        <option value="Y">Y</option>
+                                        <option value="R">R</option>
+                                    </select>
+                                </div>
+                                <div class="text-[11px] text-slate-500 pb-1.5">
+                                    Acredita <span class="font-semibold text-slate-700">1 crédito</span> fijo.
+                                </div>
+                                <button type="submit"
+                                        class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-semibold transition-colors">
+                                    Cargar ticket
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endif %}
+                <tr x-show="showPayment" x-cloak>
+                    <td colspan="6" class="px-4 py-3 bg-amber-50/60 border-t border-dashed border-amber-200">
+                        <div class="flex items-end gap-1.5 justify-center flex-wrap max-w-xl mx-auto">
+                            <div class="text-[11px] text-slate-500 mr-2">
+                                Suma créditos por pago en efectivo{% if acc.key_type != 'ticket_carga' %} o cuenta corriente{% endif %}.
+                            </div>
+                            <form hx-post="/ui/accounts/{{ acc.account_id }}/recharge"
+                                  hx-target="#user-detail-panel"
+                                  hx-swap="innerHTML"
+                                  class="flex items-end gap-1.5 flex-wrap">
+                                <template x-for="n in [1, 5, 10]" :key="n">
+                                    <button type="button" @click="paymentAmount = n"
+                                            :class="paymentAmount == n ? 'bg-amber-500 text-white' : 'bg-white text-slate-600 hover:bg-amber-100 border border-amber-200'"
+                                            class="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                                            x-text="n"></button>
+                                </template>
+                                <input type="number" name="amount" min="1" max="10000"
+                                       x-model="paymentAmount"
+                                       title="Créditos a sumar"
+                                       class="w-16 bg-white border border-amber-200 rounded-lg px-2 py-1.5 text-sm text-center font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                                <button type="submit"
+                                        class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-semibold transition-colors">
+                                    Cargar pago
                                 </button>
                             </form>
                         </div>

@@ -40,6 +40,10 @@ relay = factory.door_relay()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    app.state.green_led = green_led
+    app.state.red_led = red_led
+    app.state.buzzer = buzzer
+    app.state.relay = relay
     ip = _lan_ip()
     print(f"[BOOT] Admin UI: http://{ip}:8000  (platform={platform_label}, hw={mode})")
     task = asyncio.create_task(rfid_polling_task())

@@ -2,12 +2,21 @@
 {% block title %}Parador Km1151 — Duchas{% endblock %}
 
 {% block body %}
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.store('rfid', { pendingUid: '' });
+});
+</script>
+
 <div class="min-h-screen"
      x-data="{
          activeTab: 'dashboard',
          selectedUserId: null,
          switchTab(tab) { this.activeTab = tab; }
      }">
+
+    <!-- SSE proxy for new-card detection (outside dashboard scope) -->
+    <div hx-ext="sse" sse-connect="/sse/events" sse-swap="new_card" hx-swap="innerHTML" style="display:none"></div>
 
     <header class="bg-sky-700 shadow-md sticky top-0 z-30">
         <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
