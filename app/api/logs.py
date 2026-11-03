@@ -1,7 +1,10 @@
+import csv
 import datetime
+import io
 import json
+import re
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from app.core.templates import make_templates
 from sqlalchemy.orm import Session
 
@@ -103,3 +106,61 @@ def ui_logs(
     is_htmx = request.headers.get("HX-Request")
     template = "_logs_table.html" if is_htmx else "_tab_logs.html"
     return templates.TemplateResponse(request, template, context)
+
+
+@router.get("/ui/logs/export")
+def export_logs_csv(
+    event_type: str = "all",
+    actor: str = "all",
+    text: str = "",
+    date_from: str = "",
+    date_to: str = "",
+    db: Session = Depends(get_db),
+    admin: str = Depends(get_current_admin_cookie),
+):
+    if not admin:
+        raise HTTPException(status_code=401)
+
+    rows = _build_query(db, event_type, actor, text, date_from, date_to).all()
+
+    # Collect all user_ids referenced in details to resolve names in one query
+    user_ids = set()
+    for row in rows:
+        try:
+            d = json.loads(row.details) if row.details else {}
+        except (ValueError, TypeError):
+            d = {}
+        for key in ("user_id", "previous_user_id"):
+            if d.get(key):
+                user_ids.add(int(d[key]))
+
+    from app.infrastructure.models import UserModel
+    user_names = {}
+    if user_ids:
+        for u in db.query(UserModel.id, UserModel.first_name, UserModel.last_name).filter(UserModel.id.in_(user_ids)).all():
+            user_names[u.id] = f"{u.first_name} {u.last_name}"
+
+    def _resolve(text):
+        return re.sub(r"usuario #(\d+)", lambda m: user_names.get(int(m.group(1)), m.group(0)), text)
+
+    output = io.StringIO()
+    output.write("﻿")  # BOM for Excel UTF-8
+    writer = csv.writer(output)
+    writer.writerow(["Fecha", "Hora", "Tipo de evento", "Actor", "Objeto", "Detalle"])
+    for row in rows:
+        e = _enrich(row)
+        writer.writerow([
+            e["date"],
+            f"{e['time_hm']}:{e['time_s']}",
+            e["type_label"],
+            e["actor"],
+            e["objeto"],
+            _resolve(e["detalle"]),
+        ])
+
+    filename = f"logs_{datetime.date.today()}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )

@@ -72,6 +72,12 @@
             </button>
 
             <button type="button"
+                    onclick="const f=this.closest('form');const p=new URLSearchParams();['event_type','actor','text','date_from','date_to'].forEach(n=>{const el=f.querySelector('[name='+n+']');if(el&&el.value&&el.value!=='all')p.set(n,el.value);});window.location='/ui/logs/export?'+p.toString();"
+                    class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-xl transition-colors">
+                ↓ CSV
+            </button>
+
+            <button type="button"
                     hx-get="/ui/logs"
                     hx-target="#logs-container"
                     hx-swap="innerHTML"
