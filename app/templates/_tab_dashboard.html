@@ -1,7 +1,12 @@
-<!-- Tab 1: Dashboard — KPIs + live event feed. KPIs update reactively via SSE `kpi` event. -->
+<!-- Dashboard — KPIs + the unified audit log, both live over SSE.
+     `kpi` event swaps the cards; `audit` event prepends a row to the log. -->
 <div class="space-y-6"
      hx-ext="sse"
-     sse-connect="/sse/events">
+     sse-connect="/sse/events"
+     x-data="{ live: false }"
+     @htmx:sse-open.window="live = true"
+     @htmx:sse-error.window="live = false"
+     @htmx:sse-close.window="live = false">
 
     <!-- KPI Cards (SSE-reactive: swapped on every swipe) -->
     <div id="kpi-cards"
@@ -10,7 +15,17 @@
         {% include "_kpi_cards.html" %}
     </div>
 
-    <!-- Live event feed -->
-    {% include "_recent_events.html" %}
+    <!-- Unified live activity log -->
+    <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-sky-600">Actividad</h2>
+        <span class="inline-flex items-center gap-1.5 text-xs font-medium"
+              :class="live ? 'text-emerald-600' : 'text-slate-400'">
+            <span class="h-2 w-2 rounded-full"
+                  :class="live ? 'bg-emerald-400 animate-pulse' : 'bg-slate-300'"></span>
+            <span x-text="live ? 'En vivo' : 'Desconectado'"></span>
+        </span>
+    </div>
+
+    {% include "_tab_logs.html" %}
 
 </div>

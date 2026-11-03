@@ -1,4 +1,5 @@
 import datetime
+import json
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from app.core.templates import make_templates
@@ -7,34 +8,21 @@ from sqlalchemy.orm import Session
 from app.infrastructure.database import get_db
 from app.infrastructure.models import AuditLogModel
 from app.core.security import get_current_admin_cookie
+from app.core.log_format import enrich_log, EVENT_LABELS, EVENT_CATEGORIES
 
 router = APIRouter()
 templates = make_templates()
 
 PER_PAGE = 50
 
-# Human-readable event type labels (Spanish)
-EVENT_LABELS = {
-    "rfid.grant":      "Acceso concedido",
-    "rfid.deny":       "Acceso denegado",
-    "user.created":    "Usuario creado",
-    "user.deleted":    "Usuario eliminado",
-    "company.created": "Empresa creada",
-    "company.deleted": "Empresa eliminada",
-    "card.created":    "Tarjeta creada",
-    "card.edited":     "Tarjeta editada",
-    "card.recharged":  "Créditos recargados",
-    "card.unlinked":   "Tarjeta desvinculada",
-    "batch.blanquear": "Blanqueo de tarjetas",
-}
 
-# Event type categories for UI grouping
-EVENT_CATEGORIES = {
-    "rfid":    ["rfid.grant", "rfid.deny"],
-    "users":   ["user.created", "user.deleted"],
-    "companies": ["company.created", "company.deleted"],
-    "cards":   ["card.created", "card.edited", "card.recharged", "card.unlinked", "batch.blanquear"],
-}
+def _enrich(row):
+    """Adapt a DB audit row into the shared render-ready dict."""
+    try:
+        details = json.loads(row.details) if row.details else {}
+    except (ValueError, TypeError):
+        details = {}
+    return enrich_log(row.event_type, row.actor, row.timestamp, details, row.summary)
 
 
 def _build_query(db: Session, event_type: str, actor: str, text: str, date_from: str, date_to: str):
@@ -70,6 +58,31 @@ def _build_query(db: Session, event_type: str, actor: str, text: str, date_from:
     return query
 
 
+def build_logs_context(db: Session, event_type="all", actor="all", text="",
+                       date_from="", date_to="", page=1):
+    """Shared context builder so the dashboard and /ui/logs render identically."""
+    query = _build_query(db, event_type, actor, text, date_from, date_to)
+    total = query.count()
+    rows = query.offset((page - 1) * PER_PAGE).limit(PER_PAGE).all()
+
+    return {
+        "logs": [_enrich(r) for r in rows],
+        "has_more": (page * PER_PAGE) < total,
+        "next_page": page + 1,
+        "total": total,
+        "filters": {
+            "event_type": event_type,
+            "actor": actor,
+            "text": text,
+            "date_from": date_from,
+            "date_to": date_to,
+        },
+        "event_labels": EVENT_LABELS,
+        "event_categories": list(EVENT_CATEGORIES.keys()),
+        "all_event_types": list(EVENT_LABELS.keys()),
+    }
+
+
 @router.get("/ui/logs", response_class=HTMLResponse)
 def ui_logs(
     request: Request,
@@ -85,29 +98,7 @@ def ui_logs(
     if not admin:
         raise HTTPException(status_code=401)
 
-    query = _build_query(db, event_type, actor, text, date_from, date_to)
-    total = query.count()
-    rows = query.offset((page - 1) * PER_PAGE).limit(PER_PAGE).all()
-
-    has_more = (page * PER_PAGE) < total
-    filters = {
-        "event_type": event_type,
-        "actor": actor,
-        "text": text,
-        "date_from": date_from,
-        "date_to": date_to,
-    }
-
-    context = {
-        "logs": rows,
-        "has_more": has_more,
-        "next_page": page + 1,
-        "total": total,
-        "filters": filters,
-        "event_labels": EVENT_LABELS,
-        "event_categories": list(EVENT_CATEGORIES.keys()),
-        "all_event_types": list(EVENT_LABELS.keys()),
-    }
+    context = build_logs_context(db, event_type, actor, text, date_from, date_to, page)
 
     is_htmx = request.headers.get("HX-Request")
     template = "_logs_table.html" if is_htmx else "_tab_logs.html"

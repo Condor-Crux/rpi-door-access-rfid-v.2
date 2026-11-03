@@ -43,5 +43,19 @@
     </template>
 </div>
 
+<script>
+    // Click-to-expand for audit log rows. Event delegation so it also covers
+    // rows injected live over SSE or via "load more".
+    document.addEventListener('click', function (ev) {
+        var row = ev.target.closest('[data-log-row]');
+        if (!row) return;
+        var detail = row.nextElementSibling;
+        if (!detail || !detail.hasAttribute('data-log-detail')) return;
+        detail.hidden = !detail.hidden;
+        var caret = row.querySelector('[data-log-caret]');
+        if (caret) caret.textContent = detail.hidden ? '▸' : '▾';
+    });
+</script>
+
 </body>
 </html>

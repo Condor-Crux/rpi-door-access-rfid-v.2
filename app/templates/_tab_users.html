@@ -1,10 +1,13 @@
+{% import "_nationality.html" as nat %}
 <!-- Tab 2: Selección de usuario + tarjetas -->
 <div class="grid grid-cols-1 lg:grid-cols-5 gap-5 min-h-[600px]"
-     x-data="{ selectedUserId: null }">
+     x-data="{ selectedUserId: null, showAdd: false, showCompanyModal: false }">
 
-    <!-- Left: search + user list -->
+    <!-- Left: search + add user + user list -->
     <div class="lg:col-span-2 bg-white border border-sky-100 rounded-2xl flex flex-col overflow-hidden shadow-sm">
-        <div class="p-4 border-b border-sky-100">
+
+        <!-- Search row: search (half) + "Agregar usuario" button -->
+        <div class="p-4 border-b border-sky-100 flex items-center gap-2">
             <input type="text"
                    name="q"
                    placeholder="Buscar usuario..."
@@ -13,12 +16,78 @@
                    hx-trigger="input changed delay:300ms, keyup[key=='Enter']"
                    hx-target="#user-list-body"
                    hx-swap="innerHTML"
-                   class="w-full bg-sky-50 border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent">
+                   class="flex-1 bg-sky-50 border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent">
+            <button type="button" @click="showAdd = !showAdd"
+                    class="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold rounded-xl transition-colors whitespace-nowrap shrink-0">
+                <span class="text-base leading-none">+</span> Agregar usuario
+            </button>
         </div>
+
+        <!-- Add user form — appears below the search, pushing the list down -->
+        <div x-show="showAdd" x-cloak class="p-4 border-b border-sky-100 bg-sky-50/40">
+            <form hx-post="/ui/users/create"
+                  hx-swap="none"
+                  hx-on::after-request="if(event.detail.successful){ this.reset(); showAdd = false; htmx.ajax('GET','/ui/users/search',{target:'#user-list-body',swap:'innerHTML'}) }"
+                  class="space-y-2">
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" name="first_name" required placeholder="Nombre"
+                           pattern="[A-Za-zÀ-ÿ ]+" title="Solo letras y espacios"
+                           class="bg-white border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400">
+                    <input type="text" name="last_name" required placeholder="Apellido"
+                           pattern="[A-Za-zÀ-ÿ ]+" title="Solo letras y espacios"
+                           class="bg-white border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400">
+                </div>
+                <div class="grid grid-cols-[6.5rem_1fr] gap-2">
+                    <select name="document_type" title="Tipo de documento"
+                            class="bg-white border border-sky-200 rounded-xl px-2 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400">
+                        <option value="DNI">DNI</option>
+                        <option value="Pasaporte">Pasaporte</option>
+                        <option value="CI">CI</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                    <input type="text" name="document_number" required placeholder="N° de documento" title="N° de documento"
+                           class="bg-white border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <select name="nationality" title="Nacionalidad"
+                            class="bg-white border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400">
+                        {{ nat.options("AR") }}
+                    </select>
+                    <div class="flex gap-1">
+                        <select id="company-select-add" name="company_id" required title="Empresa"
+                                class="flex-1 min-w-0 bg-white border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400">
+                            <option value="" disabled selected>Empresa…</option>
+                            {% for c in companies %}
+                            <option value="{{ c.id }}">{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button"
+                                @click="showCompanyModal = true; $nextTick(() => $refs.companyName && $refs.companyName.focus())"
+                                title="Agregar empresa"
+                                class="shrink-0 px-3 py-2 bg-sky-100 hover:bg-sky-200 text-sky-700 text-xs font-semibold rounded-xl transition-colors">
+                            Agregar
+                        </button>
+                    </div>
+                </div>
+                <input type="email" name="email" placeholder="Email (opcional)" title="Email"
+                       class="w-full bg-white border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400">
+                <div class="flex items-center gap-2 pt-0.5">
+                    <button type="submit"
+                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold rounded-xl transition-colors">
+                        <span class="text-base leading-none">+</span> Agregar usuario
+                    </button>
+                    <button type="button" @click="showAdd = false"
+                            class="px-3 py-2 text-slate-400 hover:text-slate-600 text-sm transition-colors">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+
         <div id="user-list-body"
              class="overflow-y-auto flex-1 divide-y divide-sky-50"
              hx-get="/ui/users/search"
-             hx-trigger="load"
+             hx-trigger="load, userListRefresh from:body"
              hx-swap="innerHTML">
         </div>
     </div>
@@ -30,6 +99,114 @@
                 Seleccioná un usuario para ver sus tarjetas
             </div>
         </div>
+    </div>
+
+    <!-- Modal: agregar empresa -->
+    <div x-show="showCompanyModal" x-cloak
+         @keydown.escape.window="showCompanyModal = false"
+         @close-company-modal.window="showCompanyModal = false"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/40" @click="showCompanyModal = false"></div>
+        <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-slate-800">Nueva empresa</h3>
+                <button type="button" @click="showCompanyModal = false"
+                        class="text-slate-400 hover:text-slate-600 text-lg leading-none">✕</button>
+            </div>
+            <form hx-post="/ui/companies/create-option"
+                  hx-target="#company-select-add"
+                  hx-swap="innerHTML"
+                  hx-on::after-request="if(event.detail.successful){ this.reset(); window.dispatchEvent(new CustomEvent('close-company-modal')) }"
+                  class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Nombre de la empresa</label>
+                    <input type="text" name="name" required autocomplete="off" x-ref="companyName"
+                           placeholder="Nombre de la empresa"
+                           class="w-full bg-white border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400">
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-1">
+                    <button type="button" @click="showCompanyModal = false"
+                            class="px-3 py-2 text-slate-500 hover:text-slate-700 text-sm transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold rounded-xl transition-colors">
+                        Guardar empresa
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<!-- Recuperar tarjetas abandonadas -->
+<div class="mt-6 bg-white border border-sky-100 rounded-2xl p-5 shadow-sm"
+     x-data="{ scanning: false, scannedCards: [], scanInput: '' }">
+
+    <div class="flex items-center justify-between">
+        <div>
+            <h3 class="text-sm font-bold text-slate-800">Recuperar tarjetas abandonadas</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Escaneá fichas encontradas en el recipiente y luego blanqueá para desvincularlas de todos los usuarios.</p>
+        </div>
+        <button @click="scanning = !scanning"
+                class="text-xs px-3 py-1.5 rounded-xl border border-sky-200 text-sky-600 hover:bg-sky-50 hover:border-sky-300 transition-colors font-medium">
+            <span x-text="scanning ? 'Cerrar' : 'Abrir'"></span>
+        </button>
+    </div>
+
+    <div x-show="scanning" x-cloak class="mt-4 space-y-4">
+        <div class="flex gap-2">
+            <input x-model="scanInput"
+                   @keydown.enter.prevent="
+                       const uid = scanInput.trim();
+                       if (uid && !scannedCards.includes(uid)) scannedCards.push(uid);
+                       scanInput = '';
+                   "
+                   placeholder="Pasar tarjeta por lector USB o escribir UID..."
+                   autocomplete="off"
+                   class="flex-1 bg-sky-50 border border-sky-200 rounded-xl px-3 py-2 text-sm font-mono text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400">
+            <button @click="
+                       const uid = scanInput.trim();
+                       if (uid && !scannedCards.includes(uid)) scannedCards.push(uid);
+                       scanInput = '';
+                   "
+                    class="px-3 py-2 bg-sky-100 hover:bg-sky-200 text-sky-700 rounded-xl text-sm font-semibold transition-colors">
+                Agregar
+            </button>
+        </div>
+
+        <div x-show="scannedCards.length > 0" class="bg-sky-50 border border-sky-100 rounded-xl p-3 space-y-1">
+            <p class="text-xs text-slate-400 mb-2 font-medium">Tarjetas a blanquear:</p>
+            <template x-for="uid in scannedCards" :key="uid">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-mono text-slate-700" x-text="uid"></span>
+                    <button @click="scannedCards = scannedCards.filter(c => c !== uid)"
+                            class="text-slate-300 hover:text-rose-500 text-xs ml-2 transition-colors">✕</button>
+                </div>
+            </template>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <form hx-post="/ui/accounts/blanquear"
+                  hx-target="#blanquear-result"
+                  hx-swap="innerHTML">
+                <input type="hidden" name="account_ids" :value="scannedCards.join(',')">
+                <button type="submit"
+                        :disabled="scannedCards.length === 0"
+                        class="px-4 py-2 bg-rose-500 hover:bg-rose-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
+                        @click="if (scannedCards.length === 0) $event.preventDefault()">
+                    Blanquear (<span x-text="scannedCards.length"></span>)
+                </button>
+            </form>
+            <button @click="scannedCards = []; scanInput = '';"
+                    x-show="scannedCards.length > 0"
+                    class="text-xs text-slate-400 hover:text-slate-600 transition-colors">
+                Limpiar lista
+            </button>
+        </div>
+
+        <div id="blanquear-result"></div>
     </div>
 
 </div>

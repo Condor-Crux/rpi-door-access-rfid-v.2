@@ -35,21 +35,27 @@
                     <input type="text" name="document_number" placeholder="Nro. de documento"
                            class="bg-sky-50 border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400">
                 </div>
-                <select name="nationality"
-                        class="w-full bg-sky-50 border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-400">
-                    {{ nat.options("AR") }}
-                </select>
-                <div class="flex gap-2">
+                <div class="grid grid-cols-3 gap-2">
+                    <select name="nationality"
+                            class="bg-sky-50 border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-400">
+                        {{ nat.options("AR") }}
+                    </select>
                     <select name="company_id" required
-                            class="flex-1 bg-sky-50 border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-400">
+                            class="col-span-2 bg-sky-50 border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-400">
                         <option value="" disabled selected>Empresa...</option>
                         {% for c in companies %}
                         <option value="{{ c.id }}">{{ c.name }}</option>
                         {% endfor %}
                     </select>
+                </div>
+                <div class="flex items-center gap-2">
                     <button type="submit"
-                            class="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold rounded-xl transition-colors whitespace-nowrap">
-                        + Crear
+                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-xl transition-colors whitespace-nowrap">
+                        <span class="text-base leading-none">✓</span> ACEPTAR
+                    </button>
+                    <button type="reset"
+                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-500 text-sm font-semibold rounded-xl transition-colors whitespace-nowrap">
+                        <span class="text-base leading-none">✕</span> Cancelar
                     </button>
                 </div>
             </form>

@@ -101,14 +101,20 @@ def create_user(db, first: str, last: str, email: str, company: CompanyModel,
 
 
 def issue_card(db, uid: str, user: UserModel | None, credits: int,
-               status: str = "active", expires_in_days: int = 365) -> AccountModel:
+               status: str = "active", expires_in_days: int = 365,
+               key_type: str = "particulares",
+               invoice_number: int | None = None) -> AccountModel:
     expiration = utcnow() + datetime.timedelta(days=expires_in_days)
+    if key_type != "ticket_carga":
+        invoice_number = None
     card = AccountModel(
         account_id=uid,
         status=status,
         expiration_date=expiration,
         credits=credits,
         user_id=user.id if user else None,
+        key_type=key_type,
+        invoice_number=invoice_number,
     )
     db.add(card)
     db.commit()
@@ -116,10 +122,16 @@ def issue_card(db, uid: str, user: UserModel | None, credits: int,
     log_audit(db, "card.created", "admin",
               f"Tarjeta emitida — {uid} ({owner})",
               {"account_id": uid, "user": owner, "credits": credits,
-               "status": status, "expires": expiration.isoformat()})
+               "status": status, "expires": expiration.isoformat(),
+               "key_type": key_type, "invoice_number": invoice_number})
     extra = ""
+    kt_label = {"particulares": "particular", "cuenta_corriente": "cta. cte.",
+                "ticket_carga": "ticket carga"}.get(key_type, key_type)
+    extra += f"  [{kt_label}]"
+    if key_type == "ticket_carga" and invoice_number is not None:
+        extra += f"  [ticket #{invoice_number}]"
     if status != "active":
-        extra = f"  [estado={status}]"
+        extra += f"  [estado={status}]"
     if expires_in_days < 0:
         extra += "  [VENCIDA]"
     step(f"Tarjeta {uid} → {owner}  (créditos={credits}){extra}")
@@ -217,17 +229,20 @@ def main(reset: bool) -> None:
         banner("FASE 3 — Emisión de tarjetas RFID")
         print("  (Maggie no recibe tarjeta — es bebé, usa la de Marge)\n")
 
-        issue_card(db, "HOMER001", homer, credits=5)
-        issue_card(db, "MARGE002", marge, credits=10)
+        # Particulares: se les VENDEN créditos
+        issue_card(db, "HOMER001", homer, credits=5, key_type="particulares")
+        issue_card(db, "MARGE002", marge, credits=10, key_type="particulares")
         # Bart: tarjeta VENCIDA (ya expiró hace 2 días) — se ve en los logs como deny
-        issue_card(db, "BART0003", bart, credits=3, expires_in_days=-2)
-        issue_card(db, "LISA0004", lisa, credits=8)
-        issue_card(db, "NED00005", ned, credits=20)
-        issue_card(db, "MOE00006", moe, credits=2)
-        issue_card(db, "BARN0007", barney, credits=0)  # recargará más tarde
+        issue_card(db, "BART0003", bart, credits=3, expires_in_days=-2, key_type="particulares")
+        # Cuenta corriente: se les REGALAN créditos (la empresa los cubre)
+        issue_card(db, "LISA0004", lisa, credits=8, key_type="cuenta_corriente")
+        issue_card(db, "NED00005", ned, credits=20, key_type="cuenta_corriente")
+        # Ticket de carga: se les REGALAN créditos contra un ticket que registramos
+        issue_card(db, "MOE00006", moe, credits=2, key_type="ticket_carga", invoice_number=100487)
+        issue_card(db, "BARN0007", barney, credits=0, key_type="ticket_carga", invoice_number=100512)  # recargará más tarde
         # Apu: tarjeta INACTIVA
-        issue_card(db, "APU00008", apu, credits=5, status="inactive")
-        issue_card(db, "KRUS0009", krusty, credits=4)
+        issue_card(db, "APU00008", apu, credits=5, status="inactive", key_type="particulares")
+        issue_card(db, "KRUS0009", krusty, credits=4, key_type="ticket_carga", invoice_number=100533)
         pause()
 
         # ---------------- FASE 4: recarga inicial ----------------

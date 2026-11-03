@@ -37,14 +37,8 @@ def grant_access(db: Session, account: AccountModel, green_led: LedIndicator, bu
     log_access(db, account.account_id, "grant")
     log_audit(db, "rfid.grant", "system",
               f"Acceso concedido — tarjeta {account.account_id}",
-              {"account_id": account.account_id, "credits_remaining": account.credits})
-    broadcaster.publish("swipe", {
-        "account_id": account.account_id,
-        "event_type": "grant",
-        "reason": None,
-        "credits_remaining": account.credits,
-        "timestamp": utcnow().isoformat(),
-    })
+              {"account_id": account.account_id, "credits_remaining": account.credits,
+               "key_type": getattr(account, "key_type", None)})
     _broadcast_kpi(db)
 
 
@@ -63,13 +57,6 @@ def deny_access(db: Session, account_id: str, reason: str, red_led: LedIndicator
     log_audit(db, "rfid.deny", "system",
               f"Acceso denegado — tarjeta {account_id} ({reason})",
               {"account_id": account_id, "reason": reason})
-    broadcaster.publish("swipe", {
-        "account_id": account_id,
-        "event_type": "deny",
-        "reason": reason,
-        "credits_remaining": None,
-        "timestamp": utcnow().isoformat(),
-    })
     _broadcast_kpi(db)
 
 

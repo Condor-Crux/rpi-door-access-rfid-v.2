@@ -34,10 +34,23 @@ http://[IP-del-RPi]:8000
 | **Empresa** | Grupo o compañía que tiene varios clientes. "Particulares" es la empresa predeterminada para clientes individuales. |
 | **Cliente / Usuario** | La persona que usa las duchas. Siempre pertenece a una empresa. |
 | **Tarjeta / Llave / Ficha** | El token físico RFID que el cliente usa en la puerta. Tiene un número único (ID de tarjeta). |
+| **Tipo de llave** | Define **cómo se obtienen los créditos** de la tarjeta. Ver la tabla de abajo. |
 | **Crédito** | Una unidad de acceso. Cada vez que se abre la puerta se descuenta 1 crédito. Por defecto se asignan 10. |
 | **Vencimiento** | Fecha y hora hasta la que la tarjeta es válida. Por defecto: 24 horas desde la asignación. Después de esa hora, la tarjeta es rechazada aunque tenga créditos. |
 | **Registro de accesos** | Historial permanente de todas las pasadas de tarjeta, aprobadas o rechazadas. No se puede borrar. |
 | **Blanquear** | Desvincular un conjunto de tarjetas de sus clientes para que puedan reutilizarse. Acción irreversible. |
+
+### Tipos de llave
+
+Cada tarjeta tiene un **tipo de llave** que distingue cómo se le asignan los créditos:
+
+| Tipo de llave | Cómo se obtienen los créditos | Campo extra |
+|---|---|---|
+| **Particulares** | Se les **venden** créditos: el cliente paga y se le cargan. | — |
+| **Cuenta corriente** | Se les **regalan** créditos (la empresa los cubre por cuenta corriente). | — |
+| **Ticket de carga** | Se les **regalan** créditos **contra un ticket de carga** que se registra en el sistema. | **N° de ticket de carga** (número del comprobante asociado). |
+
+> El **N° de ticket de carga** solo aplica al tipo *Ticket de carga* y queda guardado en la tarjeta como referencia del comprobante que justificó los créditos regalados.
 
 ---
 

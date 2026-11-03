@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.infrastructure.models import Base
 from app.infrastructure.database import get_db
-from app.core.security import get_current_admin
+from app.core.security import get_current_admin, get_current_admin_cookie
 
 @pytest.fixture(scope="session")
 def engine():
@@ -37,6 +37,8 @@ def client(db_session):
         yield db_session
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_admin] = lambda: "test-admin"
+    app.dependency_overrides[get_current_admin_cookie] = lambda: "test-admin"
     yield TestClient(app)
     del app.dependency_overrides[get_db]
     del app.dependency_overrides[get_current_admin]
+    del app.dependency_overrides[get_current_admin_cookie]

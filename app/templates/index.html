@@ -2,6 +2,12 @@
 {% block title %}Parador Km1151 — Duchas{% endblock %}
 
 {% block body %}
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.store('rfid', { pendingUid: '' });
+});
+</script>
+
 <div class="min-h-screen"
      x-data="{
          activeTab: 'dashboard',
@@ -9,55 +15,76 @@
          switchTab(tab) { this.activeTab = tab; }
      }">
 
-    <header class="bg-sky-700 shadow-md sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
-            <!-- Brand -->
-            <div class="flex items-center gap-5 py-4">
-                <span class="font-nunito text-xl font-800 tracking-tight text-white select-none leading-none" style="font-weight:800">PARADOR KM1151 — DUCHAS</span>
+    <!-- SSE proxy for new-card detection (outside dashboard scope) -->
+    <div hx-ext="sse" sse-connect="/sse/events" sse-swap="new_card" hx-swap="innerHTML" style="display:none"></div>
 
-                <!-- Tab nav -->
-                <nav class="hidden sm:flex h-full ml-2">
-                    <button @click="switchTab('dashboard')"
-                            class="px-4 py-4 text-sm font-semibold border-b-2 transition-colors"
-                            :class="activeTab === 'dashboard'
-                                ? 'border-white text-white'
-                                : 'border-transparent text-sky-200 hover:text-white hover:border-sky-300'">
-                        Dashboard
-                    </button>
-                    <button @click="switchTab('usuarios')"
-                            class="px-4 py-4 text-sm font-semibold border-b-2 transition-colors"
-                            :class="activeTab === 'usuarios'
-                                ? 'border-white text-white'
-                                : 'border-transparent text-sky-200 hover:text-white hover:border-sky-300'"
-                            hx-get="/ui/users/search"
-                            hx-target="#user-list-body"
-                            hx-trigger="click[activeTab!='usuarios'] once">
-                        Usuarios
-                    </button>
-                    <button @click="switchTab('datos')"
-                            class="px-4 py-4 text-sm font-semibold border-b-2 transition-colors"
-                            :class="activeTab === 'datos'
-                                ? 'border-white text-white'
-                                : 'border-transparent text-sky-200 hover:text-white hover:border-sky-300'">
-                        Administración
-                    </button>
-                    <button @click="switchTab('logs')"
-                            class="px-4 py-4 text-sm font-semibold border-b-2 transition-colors"
-                            :class="activeTab === 'logs'
-                                ? 'border-white text-white'
-                                : 'border-transparent text-sky-200 hover:text-white hover:border-sky-300'">
-                        Logs
-                    </button>
-                </nav>
+    <header class="bg-sky-700 shadow-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <!-- Brand row + logout -->
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-5 py-3 sm:py-4 min-w-0">
+                    <span class="font-nunito text-sm sm:text-xl tracking-tight text-white select-none leading-none truncate" style="font-weight:800">PARADOR KM1151 — DUCHAS</span>
+
+                    <!-- Tab nav — desktop only -->
+                    <nav class="hidden sm:flex h-full ml-2">
+                        <button @click="switchTab('dashboard')"
+                                class="px-4 py-4 text-sm font-semibold border-b-2 transition-colors"
+                                :class="activeTab === 'dashboard'
+                                    ? 'border-white text-white'
+                                    : 'border-transparent text-sky-200 hover:text-white hover:border-sky-300'">
+                            Dashboard
+                        </button>
+                        <button @click="switchTab('usuarios')"
+                                class="px-4 py-4 text-sm font-semibold border-b-2 transition-colors"
+                                :class="activeTab === 'usuarios'
+                                    ? 'border-white text-white'
+                                    : 'border-transparent text-sky-200 hover:text-white hover:border-sky-300'"
+                                hx-get="/ui/users/search"
+                                hx-target="#user-list-body"
+                                hx-trigger="click[activeTab!='usuarios'] once">
+                            Usuarios
+                        </button>
+                        {# LEGACY — pestaña "Administración" oculta, no se usa en esta iteración
+                        <button @click="switchTab('datos')"
+                                class="px-4 py-4 text-sm font-semibold border-b-2 transition-colors"
+                                :class="activeTab === 'datos'
+                                    ? 'border-white text-white'
+                                    : 'border-transparent text-sky-200 hover:text-white hover:border-sky-300'">
+                            Administración
+                        </button>
+                        #}
+                    </nav>
+                </div>
+
+                <form action="/ui/logout" method="GET">
+                    <button class="text-xs text-sky-200 hover:text-white transition-colors px-2 py-1 rounded hover:bg-sky-600 shrink-0">Salir</button>
+                </form>
             </div>
 
-            <form action="/ui/logout" method="GET">
-                <button class="text-xs text-sky-200 hover:text-white transition-colors px-2 py-1 rounded hover:bg-sky-600">Salir</button>
-            </form>
+            <!-- Tab nav — mobile only -->
+            <nav class="flex sm:hidden border-t border-sky-600 -mx-4">
+                <button @click="switchTab('dashboard')"
+                        class="flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors"
+                        :class="activeTab === 'dashboard'
+                            ? 'border-white text-white'
+                            : 'border-transparent text-sky-200'">
+                    Dashboard
+                </button>
+                <button @click="switchTab('usuarios')"
+                        class="flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors"
+                        :class="activeTab === 'usuarios'
+                            ? 'border-white text-white'
+                            : 'border-transparent text-sky-200'"
+                        hx-get="/ui/users/search"
+                        hx-target="#user-list-body"
+                        hx-trigger="click[activeTab!='usuarios'] once">
+                    Usuarios
+                </button>
+            </nav>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-6 py-6">
+    <main class="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
 
         <!-- Tab 1: Dashboard -->
         <div x-show="activeTab === 'dashboard'" x-cloak>
@@ -72,14 +99,6 @@
         <!-- Tab 3: Datos -->
         <div x-show="activeTab === 'datos'" x-cloak>
             {% include "_tab_data.html" %}
-        </div>
-
-        <!-- Tab 4: Logs — lazy loaded on first reveal -->
-        <div x-show="activeTab === 'logs'" x-cloak
-             hx-get="/ui/logs"
-             hx-trigger="intersect once"
-             hx-swap="innerHTML">
-            <div class="flex items-center justify-center py-20 text-slate-400 text-sm">Cargando logs...</div>
         </div>
 
     </main>

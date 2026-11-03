@@ -6,6 +6,8 @@ import json
 from sqlalchemy.orm import Session
 from app.infrastructure.models import AuditLogModel
 from app.core.time import utcnow
+from app.core.events import broadcaster
+from app.core.log_format import enrich_log
 
 
 def log_audit(
@@ -15,8 +17,9 @@ def log_audit(
     summary: str,
     details: dict | None = None,
 ) -> None:
+    ts = utcnow()
     entry = AuditLogModel(
-        timestamp=utcnow(),
+        timestamp=ts,
         event_type=event_type,
         actor=actor,
         summary=summary,
@@ -24,3 +27,5 @@ def log_audit(
     )
     db.add(entry)
     db.commit()
+    # Push the same enriched row every SSE-connected dashboard renders live.
+    broadcaster.publish("audit", enrich_log(event_type, actor, ts, details or {}, summary))

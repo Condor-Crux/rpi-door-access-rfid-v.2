@@ -1,76 +1,39 @@
-<!-- Audit log table fragment -->
+<!-- Audit log table fragment — dense rows, icon-coded type, click-to-expand.
+     The tbody is SSE-wired (sse-swap="audit"): every new audit entry is
+     prepended live. Re-rendered on filter, and the SSE ext re-registers it. -->
 <div class="bg-white border border-sky-100 rounded-2xl overflow-hidden shadow-sm">
-    <div class="px-5 py-3 border-b border-sky-100 bg-sky-50/50">
+    <div class="px-5 py-2.5 border-b border-sky-100 bg-sky-50/50">
         <p class="text-xs text-slate-500 font-medium">{{ total }} evento{{ 's' if total != 1 else '' }} encontrado{{ 's' if total != 1 else '' }}</p>
     </div>
 
-    {% if logs %}
     <div class="overflow-x-auto">
-        <table class="w-full">
+        <table class="w-full text-xs">
             <thead>
-                <tr class="text-left text-xs font-semibold uppercase tracking-wider text-sky-600 border-b border-sky-100 bg-sky-50/30">
-                    <th class="px-5 py-3 whitespace-nowrap">Timestamp (UTC)</th>
-                    <th class="px-5 py-3">Tipo</th>
-                    <th class="px-5 py-3">Actor</th>
-                    <th class="px-5 py-3">Descripción</th>
+                <tr class="text-left text-[11px] font-semibold uppercase tracking-wider text-sky-600 border-b border-sky-100 bg-sky-50/30">
+                    <th class="px-4 py-2 whitespace-nowrap">Hora (UTC)</th>
+                    <th class="px-2 py-2 text-center">Tipo</th>
+                    <th class="px-3 py-2">Actor</th>
+                    <th class="px-3 py-2">Objeto</th>
+                    <th class="px-4 py-2">Detalle</th>
                 </tr>
             </thead>
-            <tbody id="logs-tbody" class="divide-y divide-sky-50">
-                {% for log in logs %}
-                <tr class="hover:bg-sky-50/50 transition-colors group" x-data="{ showDetails: false }">
-                    <td class="px-5 py-3 text-xs font-mono text-slate-400 whitespace-nowrap align-top">
-                        {{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
-                    </td>
-                    <td class="px-5 py-3 align-top">
-                        {% set et = log.event_type %}
-                        {% if et == 'rfid.grant' %}
-                        <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 whitespace-nowrap">✓ Acceso</span>
-                        {% elif et == 'rfid.deny' %}
-                        <span class="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-600 ring-1 ring-inset ring-rose-200 whitespace-nowrap">✕ Denegado</span>
-                        {% elif et == 'user.created' %}
-                        <span class="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700 ring-1 ring-inset ring-sky-200 whitespace-nowrap">+ Usuario</span>
-                        {% elif et == 'user.deleted' %}
-                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500 ring-1 ring-inset ring-slate-200 whitespace-nowrap">– Usuario</span>
-                        {% elif et == 'company.created' %}
-                        <span class="inline-flex items-center rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200 whitespace-nowrap">+ Empresa</span>
-                        {% elif et == 'company.deleted' %}
-                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500 ring-1 ring-inset ring-slate-200 whitespace-nowrap">– Empresa</span>
-                        {% elif et == 'card.created' %}
-                        <span class="inline-flex items-center rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-semibold text-cyan-700 ring-1 ring-inset ring-cyan-200 whitespace-nowrap">+ Tarjeta</span>
-                        {% elif et == 'card.edited' %}
-                        <span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 whitespace-nowrap">✎ Editada</span>
-                        {% elif et == 'card.recharged' %}
-                        <span class="inline-flex items-center rounded-full bg-teal-100 px-2 py-0.5 text-xs font-semibold text-teal-700 ring-1 ring-inset ring-teal-200 whitespace-nowrap">↑ Recarga</span>
-                        {% elif et == 'card.unlinked' %}
-                        <span class="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700 ring-1 ring-inset ring-orange-200 whitespace-nowrap">⊘ Desvinc.</span>
-                        {% elif et == 'batch.blanquear' %}
-                        <span class="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-600 ring-1 ring-inset ring-rose-200 whitespace-nowrap">⊗ Blanqueo</span>
-                        {% else %}
-                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-mono text-slate-500 whitespace-nowrap">{{ et }}</span>
-                        {% endif %}
-                    </td>
-                    <td class="px-5 py-3 align-top">
-                        <span class="text-xs {{ 'text-slate-600 font-medium' if log.actor == 'admin' else 'text-slate-400' }}">
-                            {{ log.actor }}
-                        </span>
-                    </td>
-                    <td class="px-5 py-3 align-top">
-                        <p class="text-sm text-slate-700">{{ log.summary }}</p>
-                        {% if log.details %}
-                        <button @click="showDetails = !showDetails"
-                                class="text-xs text-slate-400 hover:text-sky-600 mt-1 transition-colors">
-                            <span x-text="showDetails ? '▲ ocultar' : '▶ detalles'"></span>
-                        </button>
-                        <pre x-show="showDetails" x-cloak
-                             class="mt-2 text-xs font-mono text-slate-500 bg-sky-50 border border-sky-100 rounded-lg p-2 overflow-x-auto max-w-md whitespace-pre-wrap">{{ log.details }}</pre>
-                        {% endif %}
+            <tbody id="logs-tbody" class="divide-y divide-sky-50"
+                   sse-swap="audit" hx-swap="afterbegin">
+                {% for e in logs %}
+                {% include "_log_row.html" %}
+                {% endfor %}
+
+                {% if not logs %}
+                <tr data-log-empty>
+                    <td colspan="5" class="px-5 py-10 text-center text-sm text-slate-400">
+                        No hay registros que coincidan con los filtros.
                     </td>
                 </tr>
-                {% endfor %}
+                {% endif %}
 
                 {% if has_more %}
                 <tr id="load-more-row">
-                    <td colspan="4" class="px-5 py-4 text-center">
+                    <td colspan="5" class="px-4 py-3 text-center">
                         <button hx-get="/ui/logs?page={{ next_page }}&event_type={{ filters.event_type }}&actor={{ filters.actor }}&text={{ filters.text }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}"
                                 hx-target="#logs-tbody"
                                 hx-swap="beforeend"
@@ -84,9 +47,4 @@
             </tbody>
         </table>
     </div>
-    {% else %}
-    <div class="px-5 py-10 text-center text-sm text-slate-400">
-        No hay registros que coincidan con los filtros.
-    </div>
-    {% endif %}
 </div>

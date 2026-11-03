@@ -51,6 +51,32 @@ def ui_create_company(
     return RedirectResponse(url="/", status_code=303)
 
 
+@router.post("/ui/companies/create-option")
+def ui_create_company_option(
+    request: Request,
+    name: str = Form(...),
+    db: Session = Depends(get_db),
+    admin: str = Depends(get_current_admin_cookie),
+):
+    if not admin:
+        return RedirectResponse(url="/login", status_code=303)
+    name = name.strip()
+    company = db.query(CompanyModel).filter(CompanyModel.name == name, CompanyModel.deleted_at == None).first()
+    if not company:
+        company = CompanyModel(name=name)
+        db.add(company)
+        db.commit()
+        db.refresh(company)
+        log_audit(db, "company.created", "admin",
+                  f"Empresa creada: {name}",
+                  {"company_id": company.id, "name": name})
+    companies = _active_companies(db)
+    return templates.TemplateResponse(
+        request, "_company_options.html",
+        {"companies": companies, "selected_id": company.id},
+    )
+
+
 @router.delete("/ui/companies/{company_id}")
 def ui_delete_company(
     company_id: int,

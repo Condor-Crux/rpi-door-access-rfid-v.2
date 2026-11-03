@@ -1,0 +1,4 @@
+<option value="" disabled {{ 'selected' if not selected_id }}>Empresa…</option>
+{% for c in companies %}
+<option value="{{ c.id }}" {{ 'selected' if selected_id == c.id }}>{{ c.name }}</option>
+{% endfor %}
