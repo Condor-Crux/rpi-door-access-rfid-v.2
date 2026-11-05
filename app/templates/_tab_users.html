@@ -1,8 +1,14 @@
 {% import "_nationality.html" as nat %}
 <!-- Tab 2: Selección de usuario + tarjetas -->
 <div class="grid grid-cols-1 lg:grid-cols-5 gap-5"
-     x-data="{ selectedUserId: null, showAdd: false, showCompanyModal: false, isMobile: !window.matchMedia('(min-width: 1024px)').matches }"
-     @resize.window.throttle="isMobile = !window.matchMedia('(min-width: 1024px)').matches"
+     x-data="{
+         selectedUserId: null, showAdd: false, showCompanyModal: false,
+         isMobile: !window.matchMedia('(min-width: 1024px)').matches,
+         init() {
+             const mq = window.matchMedia('(min-width: 1024px)');
+             mq.addEventListener('change', (e) => { this.isMobile = !e.matches; });
+         }
+     }"
      :style="isMobile ? '' : 'min-height: 600px'">
 
     <!-- Left: search + add user + user list -->
