@@ -27,8 +27,9 @@
                    hx-swap="innerHTML"
                    class="flex-1 bg-sky-50 border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent">
             <button type="button" @click="showAdd = !showAdd"
-                    class="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold rounded-xl transition-colors whitespace-nowrap shrink-0">
-                <span class="text-base leading-none">+</span> Agregar usuario
+                    title="Agregar usuario"
+                    class="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold rounded-xl transition-colors shrink-0">
+                <span class="text-base leading-none">+</span><span class="sm:hidden"> Agregar</span><span class="hidden sm:flex"> Agregar usuario</span>
             </button>
         </div>
 
