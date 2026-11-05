@@ -1,10 +1,13 @@
 {% import "_nationality.html" as nat %}
 <!-- Tab 2: Selección de usuario + tarjetas -->
-<div class="grid grid-cols-1 lg:grid-cols-5 gap-5 min-h-[600px]"
-     x-data="{ selectedUserId: null, showAdd: false, showCompanyModal: false }">
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-5"
+     x-data="{ selectedUserId: null, showAdd: false, showCompanyModal: false, isMobile: window.innerWidth < 1024 }"
+     @resize.window.throttle="isMobile = window.innerWidth < 1024"
+     :style="isMobile ? '' : 'min-height: 600px'">
 
     <!-- Left: search + add user + user list -->
-    <div class="lg:col-span-2 bg-white border border-sky-100 rounded-2xl flex flex-col overflow-hidden shadow-sm">
+    <div class="lg:col-span-2 bg-white border border-sky-100 rounded-2xl flex flex-col overflow-hidden shadow-sm"
+         x-show="!isMobile || selectedUserId === null">
 
         <!-- Search row: search (half) + "Agregar usuario" button -->
         <div class="p-4 border-b border-sky-100 flex items-center gap-2">
@@ -93,7 +96,16 @@
     </div>
 
     <!-- Right: user detail panel -->
-    <div class="lg:col-span-3 bg-white border border-sky-100 rounded-2xl overflow-hidden shadow-sm">
+    <div class="lg:col-span-3 bg-white border border-sky-100 rounded-2xl overflow-hidden shadow-sm"
+         x-show="!isMobile || selectedUserId !== null">
+        <!-- Back button — mobile only -->
+        <div x-show="isMobile && selectedUserId !== null"
+             class="px-4 py-2.5 border-b border-sky-100 flex items-center">
+            <button @click="selectedUserId = null"
+                    class="flex items-center gap-1.5 text-sm font-semibold text-sky-600 hover:text-sky-800 transition-colors">
+                ← Volver
+            </button>
+        </div>
         <div id="user-detail-panel" class="h-full">
             <div class="flex items-center justify-center h-full py-20 text-slate-400 text-sm">
                 Seleccioná un usuario para ver sus tarjetas
