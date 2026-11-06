@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     VERBOSE: bool = False
     JWT_SECRET_KEY: str = "secret"
     DATABASE_URL: str = "sqlite:///./rpi_door_access.db"
+    SITE_LABEL: str = "DUCHAS"
     
     # GPIO Pins (from ADR docs/GPIO.jpeg)
     RELAY_PIN: int = 17

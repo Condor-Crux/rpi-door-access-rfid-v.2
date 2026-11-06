@@ -117,6 +117,7 @@ def index(request: Request, db: Session = Depends(get_db), admin: str = Depends(
         "users": users,
         "companies": companies,
         "kpi": kpi,
+        "site_label": settings.SITE_LABEL,
         # Seed the dashboard's live log with the most recent entries.
         **build_logs_context(db),
     })

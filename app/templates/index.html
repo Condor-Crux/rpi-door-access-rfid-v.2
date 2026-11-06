@@ -1,5 +1,5 @@
 {% extends "_layout.html" %}
-{% block title %}Parador Km1151 — Duchas{% endblock %}
+{% block title %}Parador Km1151 — {{ site_label }}{% endblock %}
 
 {% block body %}
 <script>
@@ -23,7 +23,7 @@ document.addEventListener('alpine:init', () => {
             <!-- Brand row + logout -->
             <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-5 py-3 sm:py-4 min-w-0">
-                    <span class="font-nunito text-sm sm:text-xl tracking-tight text-white select-none leading-none truncate" style="font-weight:800">PARADOR KM1151 — DUCHAS</span>
+                    <span class="font-nunito text-sm sm:text-xl tracking-tight text-white select-none leading-none truncate" style="font-weight:800">PARADOR KM1151 — {{ site_label }}</span>
 
                     <!-- Tab nav — desktop only -->
                     <nav class="hidden sm:flex h-full ml-2">
