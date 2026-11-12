@@ -117,7 +117,6 @@ def index(request: Request, db: Session = Depends(get_db), admin: str = Depends(
         "users": users,
         "companies": companies,
         "kpi": kpi,
-        "site_label": settings.SITE_LABEL,
         # Seed the dashboard's live log with the most recent entries.
         **build_logs_context(db),
     })
@@ -220,7 +219,7 @@ def ui_create_account(
             {"user": user, "accounts": accounts, "companies": companies}
         )
         if created:
-            response.headers["HX-Trigger"] = "account-created, userListRefresh"
+            response.headers["HX-Trigger"] = "account-created"
         return response
 
     if request.headers.get("HX-Request"):
@@ -538,12 +537,10 @@ def ui_unlink_account(
     if request.headers.get("HX-Request") and user_id:
         user, accounts = _user_with_accounts(db, user_id)
         companies = db.query(CompanyModel).filter(CompanyModel.deleted_at == None).order_by(CompanyModel.id).all()
-        resp = templates.TemplateResponse(
+        return templates.TemplateResponse(
             request, "_user_detail_panel.html",
             {"user": user, "accounts": accounts, "companies": companies}
         )
-        resp.headers["HX-Trigger"] = "userListRefresh"
-        return resp
     return Response(status_code=200, content="")
 
 

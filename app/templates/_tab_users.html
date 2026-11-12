@@ -1,19 +1,10 @@
 {% import "_nationality.html" as nat %}
 <!-- Tab 2: Selección de usuario + tarjetas -->
-<div class="grid grid-cols-1 lg:grid-cols-5 gap-5"
-     x-data="{
-         selectedUserId: null, showAdd: false, showCompanyModal: false,
-         isMobile: !window.matchMedia('(min-width: 1024px)').matches,
-         init() {
-             const mq = window.matchMedia('(min-width: 1024px)');
-             mq.addEventListener('change', (e) => { this.isMobile = !e.matches; });
-         }
-     }"
-     :style="isMobile ? '' : 'min-height: 600px'">
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:h-[calc(100vh-7rem)]"
+     x-data="{ selectedUserId: null, showAdd: false, showCompanyModal: false }">
 
     <!-- Left: search + add user + user list -->
-    <div class="lg:col-span-2 bg-white border border-sky-100 rounded-2xl flex flex-col overflow-hidden shadow-sm"
-         x-show="!isMobile || selectedUserId === null">
+    <div class="lg:col-span-2 bg-white border border-sky-100 rounded-2xl flex flex-col overflow-hidden shadow-sm">
 
         <!-- Search row: search (half) + "Agregar usuario" button -->
         <div class="p-4 border-b border-sky-100 flex items-center gap-2">
@@ -27,9 +18,8 @@
                    hx-swap="innerHTML"
                    class="flex-1 bg-sky-50 border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent">
             <button type="button" @click="showAdd = !showAdd"
-                    title="Agregar usuario"
-                    class="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold rounded-xl transition-colors shrink-0">
-                <span class="text-base leading-none">+</span><span class="sm:hidden"> Agregar</span><span class="hidden sm:flex"> Agregar usuario</span>
+                    class="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold rounded-xl transition-colors whitespace-nowrap shrink-0">
+                <span class="text-base leading-none">+</span> Agregar usuario
             </button>
         </div>
 
@@ -40,11 +30,9 @@
                   hx-on::after-request="if(event.detail.successful){ this.reset(); showAdd = false; htmx.ajax('GET','/ui/users/search',{target:'#user-list-body',swap:'innerHTML'}) }"
                   class="space-y-2">
                 <div class="grid grid-cols-2 gap-2">
-                    <input type="text" name="first_name" required placeholder="Nombre"
-                           pattern="[A-Za-zÀ-ÿ ]+" title="Solo letras y espacios"
+                    <input type="text" name="first_name" required placeholder="Nombre" title="Nombre"
                            class="bg-white border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400">
-                    <input type="text" name="last_name" required placeholder="Apellido"
-                           pattern="[A-Za-zÀ-ÿ ]+" title="Solo letras y espacios"
+                    <input type="text" name="last_name" required placeholder="Apellido" title="Apellido"
                            class="bg-white border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400">
                 </div>
                 <div class="grid grid-cols-[6.5rem_1fr] gap-2">
@@ -55,7 +43,7 @@
                         <option value="CI">CI</option>
                         <option value="Otro">Otro</option>
                     </select>
-                    <input type="text" name="document_number" required placeholder="N° de documento" title="N° de documento"
+                    <input type="text" name="document_number" placeholder="N° de documento" title="N° de documento"
                            class="bg-white border border-sky-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400">
                 </div>
                 <div class="grid grid-cols-2 gap-2">
@@ -97,23 +85,14 @@
         <div id="user-list-body"
              class="overflow-y-auto flex-1 divide-y divide-sky-50"
              hx-get="/ui/users/search"
-             hx-trigger="load, userListRefresh from:body"
+             hx-trigger="load"
              hx-swap="innerHTML">
         </div>
     </div>
 
     <!-- Right: user detail panel -->
-    <div class="lg:col-span-3 bg-white border border-sky-100 rounded-2xl overflow-hidden shadow-sm"
-         x-show="!isMobile || selectedUserId !== null">
-        <!-- Back button — mobile only -->
-        <div x-show="isMobile && selectedUserId !== null"
-             class="px-4 py-2.5 border-b border-sky-100 flex items-center">
-            <button @click="selectedUserId = null"
-                    class="flex items-center gap-1.5 text-sm font-semibold text-sky-600 hover:text-sky-800 transition-colors">
-                ← Volver
-            </button>
-        </div>
-        <div id="user-detail-panel" class="h-full">
+    <div class="lg:col-span-3 bg-white border border-sky-100 rounded-2xl overflow-hidden shadow-sm">
+        <div id="user-detail-panel" class="h-full lg:overflow-y-auto">
             <div class="flex items-center justify-center h-full py-20 text-slate-400 text-sm">
                 Seleccioná un usuario para ver sus tarjetas
             </div>

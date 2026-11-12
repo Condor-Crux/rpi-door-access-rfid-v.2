@@ -6,7 +6,7 @@ from sqlalchemy import or_
 from typing import List
 
 from app.infrastructure.database import get_db
-from app.infrastructure.models import UserModel, CompanyModel, AccountModel
+from app.infrastructure.models import UserModel, CompanyModel
 from app.domain.entities import User
 from app.core.security import get_current_admin, get_current_admin_cookie
 from app.core.time import utcnow
@@ -62,15 +62,7 @@ def ui_search_users(
         )
     else:
         users = _active_users(db)
-    user_ids = [u.id for u in users]
-    users_with_accounts = set(
-        row[0] for row in db.query(AccountModel.user_id)
-        .filter(AccountModel.user_id.in_(user_ids))
-        .distinct()
-        .all()
-    ) if user_ids else set()
-    return templates.TemplateResponse(request, "_user_search_results.html",
-        {"users": users, "users_with_accounts": users_with_accounts})
+    return templates.TemplateResponse(request, "_user_search_results.html", {"users": users})
 
 
 @router.get("/ui/users/{user_id}/detail", response_class=HTMLResponse)
@@ -177,9 +169,6 @@ def ui_delete_user(
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404)
-    has_cards = db.query(AccountModel).filter(AccountModel.user_id == user_id).first()
-    if has_cards:
-        raise HTTPException(status_code=409, detail="El usuario tiene tarjetas asociadas.")
     name = f"{user.first_name} {user.last_name}"
     user.deleted_at = utcnow()
     db.commit()
@@ -187,4 +176,4 @@ def ui_delete_user(
               f"Usuario eliminado: {name}",
               {"user_id": user_id, "name": name})
     from fastapi.responses import Response
-    return Response(status_code=200, content="", headers={"HX-Trigger": "userListRefresh"})
+    return Response(status_code=200, content="")

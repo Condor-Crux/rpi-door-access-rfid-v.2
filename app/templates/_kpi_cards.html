@@ -1,14 +1,14 @@
 {#- Reusable KPI cards: rendered on initial page load and pushed via SSE after every swipe. -#}
 {%- macro card(label, total, grant, deny, rate) -%}
 <div class="bg-white border border-sky-100 rounded-2xl p-5 space-y-3 shadow-sm">
-    <div class="flex items-baseline justify-between gap-1">
-        <p class="text-xs font-semibold uppercase tracking-widest text-sky-500 truncate min-w-0">{{ label }}</p>
-        <p class="text-xs font-mono tabular-nums font-semibold shrink-0
+    <div class="flex items-baseline justify-between">
+        <p class="text-xs font-semibold uppercase tracking-widest text-sky-500">{{ label }}</p>
+        <p class="text-xs font-mono tabular-nums font-semibold
             {% if rate >= 90 %}text-emerald-600{% elif rate >= 70 %}text-amber-500{% else %}text-rose-500{% endif %}">
             {{ '%.1f' % rate }}%
         </p>
     </div>
-    <p class="text-3xl lg:text-4xl font-bold tabular-nums text-slate-800">{{ total }}</p>
+    <p class="text-4xl font-bold tabular-nums text-slate-800">{{ total }}</p>
     <div class="flex gap-4 text-xs font-mono">
         <span class="text-emerald-600 font-semibold">✓ {{ grant }}</span>
         <span class="text-rose-500 font-semibold">✕ {{ deny }}</span>

@@ -1,6 +1,6 @@
 {% import "_nationality.html" as nat %}
 <!-- User detail panel — loaded via HTMX into #user-detail-panel -->
-<div class="p-3 sm:p-5 space-y-4 sm:space-y-5" x-data="{ showAddCard: false, newKeyType: 'particulares', showEdit: false }">
+<div class="p-5 space-y-5" x-data="{ showAddCard: false, newKeyType: 'particulares', showEdit: false }">
 
     {% if invoice_error %}
     <div class="flex items-start gap-2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -24,7 +24,7 @@
             </p>
         </div>
 
-        <!-- Formulario edición inline -->
+        <!-- Formulario edicion inline -->
         <form x-show="showEdit" x-cloak
               hx-post="/ui/users/{{ user.id }}/edit"
               hx-target="#user-detail-panel"
@@ -48,7 +48,7 @@
                     <option value="Otro" {{ 'selected' if user.document_type == 'Otro' }}>Otro</option>
                 </select>
                 <input type="text" name="document_number" value="{{ user.document_number or '' }}"
-                       placeholder="N° de documento"
+                       placeholder="N de documento"
                        class="bg-white border border-sky-200 rounded-xl px-3 py-1.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400">
             </div>
             <div class="flex items-center gap-2">
@@ -130,7 +130,7 @@
             </div>
 
             <!-- Créditos: shortcuts 1/5/10 + editable — fijo en 1 para ticket_carga -->
-            <div class="flex flex-wrap items-center gap-1.5">
+            <div class="flex items-center gap-1.5">
                 <template x-if="newKeyType !== 'ticket_carga'">
                     <div class="flex items-center gap-1.5">
                         <template x-for="n in [1, 5, 10]" :key="n">
@@ -180,8 +180,7 @@
     } %}
     {% if accounts %}
     <div class="bg-sky-50 rounded-2xl overflow-hidden border border-sky-100">
-        <div class="overflow-x-auto">
-        <table class="w-full min-w-[540px]">
+        <table class="w-full">
             <thead>
                 <tr class="text-center text-xs font-semibold uppercase tracking-wider text-sky-600 border-b border-sky-100 align-middle">
                     <th class="px-3 py-3">UID</th>
@@ -406,7 +405,6 @@
                 </tbody>
                 {% endfor %}
         </table>
-        </div>
     </div>
     {% else %}
     <div class="text-center py-8 text-sm text-slate-400">
