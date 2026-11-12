@@ -1,0 +1,17 @@
+[Unit]
+Description=RPi Door Access RFID (FastAPI)
+After=network-online.target dev-spi0.0.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kodex
+Group=kodex
+WorkingDirectory=/home/kodex/rpi-door-access-rfid
+ExecStartPre=/bin/sleep 5
+ExecStart=/usr/bin/python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips 127.0.0.1
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
