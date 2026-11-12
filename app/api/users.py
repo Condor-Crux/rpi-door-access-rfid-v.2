@@ -124,6 +124,39 @@ def ui_create_user(
     return RedirectResponse(url="/", status_code=303)
 
 
+@router.post("/ui/users/{user_id}/edit")
+def ui_edit_user(
+    user_id: int,
+    request: Request,
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    document_type: str = Form(""),
+    document_number: str = Form(""),
+    db: Session = Depends(get_db),
+    admin: str = Depends(get_current_admin_cookie),
+):
+    if not admin:
+        return RedirectResponse(url="/login", status_code=303)
+    user = db.query(UserModel).filter(UserModel.id == user_id, UserModel.deleted_at == None).first()
+    if not user:
+        raise HTTPException(status_code=404)
+    user.first_name = first_name.strip()
+    user.last_name = last_name.strip()
+    user.document_type = document_type.strip() or None
+    user.document_number = document_number.strip() or None
+    db.commit()
+    log_audit(db, "user.updated", "admin",
+              f"Usuario actualizado: {user.first_name} {user.last_name}",
+              {"user_id": user_id, "first_name": user.first_name, "last_name": user.last_name,
+               "document_type": user.document_type, "document_number": user.document_number})
+    companies = db.query(CompanyModel).filter(CompanyModel.deleted_at == None).order_by(CompanyModel.id).all()
+    user, accounts = _user_with_accounts(db, user_id)
+    return templates.TemplateResponse(
+        request, "_user_detail_panel.html",
+        {"user": user, "accounts": accounts, "companies": companies}
+    )
+
+
 @router.delete("/ui/users/{user_id}")
 def ui_delete_user(
     user_id: int,
