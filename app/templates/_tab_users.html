@@ -1,6 +1,6 @@
 {% import "_nationality.html" as nat %}
 <!-- Tab 2: Selección de usuario + tarjetas -->
-<div class="grid grid-cols-1 lg:grid-cols-5 gap-5 min-h-[600px]"
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:h-[calc(100vh-7rem)]"
      x-data="{ selectedUserId: null, showAdd: false, showCompanyModal: false }">
 
     <!-- Left: search + add user + user list -->
@@ -92,7 +92,7 @@
 
     <!-- Right: user detail panel -->
     <div class="lg:col-span-3 bg-white border border-sky-100 rounded-2xl overflow-hidden shadow-sm">
-        <div id="user-detail-panel" class="h-full">
+        <div id="user-detail-panel" class="h-full lg:overflow-y-auto">
             <div class="flex items-center justify-center h-full py-20 text-slate-400 text-sm">
                 Seleccioná un usuario para ver sus tarjetas
             </div>
@@ -134,6 +134,77 @@
                 </div>
             </form>
         </div>
+    </div>
+
+</div>
+
+<!-- Recuperar tarjetas abandonadas -->
+<div class="mt-6 bg-white border border-sky-100 rounded-2xl p-5 shadow-sm"
+     x-data="{ scanning: false, scannedCards: [], scanInput: '' }">
+
+    <div class="flex items-center justify-between">
+        <div>
+            <h3 class="text-sm font-bold text-slate-800">Recuperar tarjetas abandonadas</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Escaneá fichas encontradas en el recipiente y luego blanqueá para desvincularlas de todos los usuarios.</p>
+        </div>
+        <button @click="scanning = !scanning"
+                class="text-xs px-3 py-1.5 rounded-xl border border-sky-200 text-sky-600 hover:bg-sky-50 hover:border-sky-300 transition-colors font-medium">
+            <span x-text="scanning ? 'Cerrar' : 'Abrir'"></span>
+        </button>
+    </div>
+
+    <div x-show="scanning" x-cloak class="mt-4 space-y-4">
+        <div class="flex gap-2">
+            <input x-model="scanInput"
+                   @keydown.enter.prevent="
+                       const uid = scanInput.trim();
+                       if (uid && !scannedCards.includes(uid)) scannedCards.push(uid);
+                       scanInput = '';
+                   "
+                   placeholder="Pasar tarjeta por lector USB o escribir UID..."
+                   autocomplete="off"
+                   class="flex-1 bg-sky-50 border border-sky-200 rounded-xl px-3 py-2 text-sm font-mono text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400">
+            <button @click="
+                       const uid = scanInput.trim();
+                       if (uid && !scannedCards.includes(uid)) scannedCards.push(uid);
+                       scanInput = '';
+                   "
+                    class="px-3 py-2 bg-sky-100 hover:bg-sky-200 text-sky-700 rounded-xl text-sm font-semibold transition-colors">
+                Agregar
+            </button>
+        </div>
+
+        <div x-show="scannedCards.length > 0" class="bg-sky-50 border border-sky-100 rounded-xl p-3 space-y-1">
+            <p class="text-xs text-slate-400 mb-2 font-medium">Tarjetas a blanquear:</p>
+            <template x-for="uid in scannedCards" :key="uid">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-mono text-slate-700" x-text="uid"></span>
+                    <button @click="scannedCards = scannedCards.filter(c => c !== uid)"
+                            class="text-slate-300 hover:text-rose-500 text-xs ml-2 transition-colors">✕</button>
+                </div>
+            </template>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <form hx-post="/ui/accounts/blanquear"
+                  hx-target="#blanquear-result"
+                  hx-swap="innerHTML">
+                <input type="hidden" name="account_ids" :value="scannedCards.join(',')">
+                <button type="submit"
+                        :disabled="scannedCards.length === 0"
+                        class="px-4 py-2 bg-rose-500 hover:bg-rose-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
+                        @click="if (scannedCards.length === 0) $event.preventDefault()">
+                    Blanquear (<span x-text="scannedCards.length"></span>)
+                </button>
+            </form>
+            <button @click="scannedCards = []; scanInput = '';"
+                    x-show="scannedCards.length > 0"
+                    class="text-xs text-slate-400 hover:text-slate-600 transition-colors">
+                Limpiar lista
+            </button>
+        </div>
+
+        <div id="blanquear-result"></div>
     </div>
 
 </div>
